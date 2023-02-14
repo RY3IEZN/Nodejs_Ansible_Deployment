@@ -1,0 +1,46 @@
+# @format
+---
+# install node
+- name: Install node and nom
+  hosts: 13.40.210.143
+  become: yes
+  tasks:
+    - name: update app repo and cache
+      apt: update_cache=yes force_apt_get=yes cache_valid_time=3600
+
+    - name: Install node and npm
+      apt:
+        pkg:
+          - nodejs
+          - npm
+
+# install app and start the app
+- name: Deploy nodejs application
+  hosts: 13.40.210.143
+  tasks:
+    - name: Copy tar file
+      copy:
+        src: /home/ubuntu/folderb/techworld-js-docker-demo-app/app/developing-with-docker-1.0.0.tgz
+        dest: /home/ubuntu/developing-with-docker-1.0.0.tgz
+
+    - name: extract tar file
+      unarchive:
+        src: /home/ubuntu/developing-with-docker-1.0.0.tgz
+        dest: /home/ubuntu/
+        remote_src: yes
+
+    - name: Install dependencies
+      npm:
+        path: /home/ubuntu/package
+
+    - name: start the app
+      command:
+        chdir: /home/ubuntu/package/
+        cmd: node server
+      async: 1000
+      poll: 0
+
+    - name: ensure the app is running
+      shell: ps aux | grep node
+      register: app_status
+    - debug: msg={{app_status.stdout_lines}}
